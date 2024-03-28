@@ -1,187 +1,182 @@
-# Webpack5 + React 配置 React 应用程序
+# Webpack5 + React 处理样式资源
 
 ## 前言
 
-使用 Webpack5 + React 从 0 到 1 构建 React 应用程序
+webpack 默认都不能处理样式资源、字体图标、图片资源、html 资源等，所以我们要加载配置来编译这些资源
 
-**拓展：**
+### 处理前端样式
 
-  技术栈：Webpack5 + React18 + TS...
-
-  代码风格：eslint + prettier + husky + Git hooks...
-
-  资源文件：样式、图片、字体...
-
-  优化功能：热更新、资源压缩、代码分离、缓存...
-
-### 搭建 React 开发环境
+#### 处理 css 文件
 
 ```
-mkdir my-react-app
-cd my-react-app
-pnpm init
+pnpm i css-loader style-loader   
 ```
 
-#### 项目目录
+css-loader：用于加载 CSS 文件，并解析其中的 @import 和 url() 等语句。它会将 CSS 文件转换为 JavaScript 模块，并将 CSS 样式嵌入到 JavaScript 中，以便在应用程序运行时可以动态加载。
+
+style-loader：用于将 CSS 样式以 `<style>` 标签的形式插入到 HTML 页面中。
+
+#### 处理 less 文件
 
 ```
-my-react-app
-├── webpack.config.js
-├── README.md
-├── node_modules
-├── package.json
-├── .gitignore
-├── public
-│   └── index.html
-└── src
-    ├── App.jsx
-    └── index.js
-```
-#### 安装 react 和 react-dom
-
-```
-pnpm install react react-dom
+pnpm i less-loader
 ```
 
-#### src/App.jsx
+less-loader：用于加载并转换 Less 文件为 CSS 文件。
 
-```jsx
-import React from "react";
-
-const App = () => {
-  return <div>Hello React</div>;
-};
-
-export default App;
+#### 处理 scss、sass 文件
 
 ```
+pnpm i sass sass-loader
+```
 
-#### src/index.js
+sass-loader 和 sass：用于加载并编译 Sass 或 Scss 文件为 CSS 文件。
+
+#### 处理 Styl 文件
+
+```
+pnpm i stylus-loader
+```
+
+stylus-loader：用于加载并编译 Stylus 文件为 CSS 文件。
+
+#### 修改 webpack.config.js 配置文件
+
+只需在 module -> rules 中添加对应的规则
 
 ```js
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
+{
+  // 用来匹配 .css 结尾的文件
+  test: /\.css$/,
+  // use 数组里面 Loader 执行顺序是从右到左
+  use: ["style-loader", "css-loader"],
+},
+{
+  test: /\.less$/,
+  use: ["style-loader", "css-loader", 'less-loader'],
+},
+{
+  test: /\.s(a|c)ss$/,
+  use: ["style-loader", "css-loader", 'sass-loader'],
+},
+{
+  test: /\.styl$/,
+  use: ["style-loader", "css-loader", 'stylus-loader'],
+}
+```
+### 提取 css 成单独的文件
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
+目前 Css 样式代码最终会被写入 Bundle 文件，并在运行时通过 style 标签注入到页面
 
-root.render(<App />);
+将 JS、CSS 代码合并进同一个产物文件的方式有几个问题：
+
+* JS、CSS 资源无法并行加载，从而降低页面性能，这样对于网站来说，会出现闪屏现象，用户体验不好
+
+* 资源缓存粒度变大，JS、CSS 任意一种变更都会致使缓存失效。
+
+我们应该是单独的 Css 文件，将样式代码抽离成单独的 CSS 文件，通过 link 标签加载性能才好
+
+生产环境中只需将用 `mini-css-extract-plugin` 插件替代 `style-loader`
 
 ```
-
-#### public/index.html
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MY-React-APP</title>
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
-
+pnpm i cross-env
+pnpm i mini-css-extract-plugin
 ```
-
-#### 安装项目所需的依赖
-
-```
-pnpm install webpack webpack-cli
-```
-
-webpack 是一个模块打包工具，用于将应用程序的各个模块打包成一个或多个bundle文件。
-
-webpack-cli 是 webpack 的命令行接口，用于在命令行中运行 webpack 相关命令。
-
-```
-pnpm install @babel/core @babel/preset-env @babel/preset-react babel-loader
-```
-
-@babel/core 是 Babel 的核心模块，用于将新版 JavaScript 编译为旧版 JavaScript。
-
-@babel/preset-env 是 Babel 的预设插件，用于将 ES6+ 版本的 JavaScript 编译为 ES5 标准兼容的 JavaScript。
-
-@babel/preset-react 是 Babel 的预设插件，用于识别和编译 React 代码。
-
-babel-loader 是 webpack 的加载器，用于在打包过程中通过 Babel 处理 JavaScript 文件。
-
-```
-pnpm install html-webpack-plugin webpack-dev-server
-```
-
-html-webpack-plugin 自动生成一个 HTML 文件，以便为 webpack 创建的 JavaScript bundle 提供服务。
-
-webpack-dev-server 开发服务器，用于在开发过程中提供服务，并支持热重载等功能。
-
-#### 配置 webpack.config.js
 
 ```js
-// 引入 Node.js 的 path 模块，用于处理文件路径
-const path = require("path");
-// 引入 HtmlWebpackPlugin 插件，用于生成 HTML 文件
-const HtmlWebpackPlugin = require("html-webpack-plugin");
+{ use: [isProduction ? MiniCssExtractPlugin.loader: "style-loader", 'css-loader'] }
+```
 
-// 导出 webpack 的配置对象
-module.exports = {
-  /* 模式 */
-  mode: "development",
+### Css 兼容性处理
 
-  /* 入口文件 */
-  entry: path.join(__dirname, "src", "index.js"), // 指定入口文件路径为 src 目录下的 index.js
+```
+pnpm i postcss-loader
+pnpm i postcss-preset-env
+```
+Cross-env：跨平台设置环境变量的命令行工具，用于在不同操作系统下设置环境变量。
 
-  /* 输出文件 */
-  output: {
-    // 指定输出路径为当前目录下的 build 目录
-    path: path.resolve(__dirname, "build"),
-  },
+MiniCssExtractPlugin：用于将 CSS 提取到单独的文件中，适用于生产环境的构建过程。
 
-  /* 模块配置，定义对不同类型文件的处理规则 */
-  module: {
-    // 定义规则数组
-    rules: [
-      {
-        // 正则表达式匹配文件路径，以 .js 或 .jsx 结尾的文件
-        test: /\.jsx?$/,
-        // 排除 node_modules 目录下的文件
-        exclude: /node_modules/,
-        // 使用 babel-loader 进行处理
-        use: {
-          loader: "babel-loader",
-          options: {
-            // 预设使用 @babel/preset-env 和 @babel/preset-react 进行转换
-            presets: ["@babel/preset-env", "@babel/preset-react"],
-          },
+```js
+// 获取样式加载器的函数，根据当前环境动态返回加载器配置
+const getStyleLoaders = (loader) => {
+  return [
+    // 如果是生产环境，则使用 MiniCssExtractPlugin.loader 提取 CSS 到单独文件，否则使用 style-loader 将样式注入到 DOM 中
+    isProduction ? MiniCssExtractPlugin.loader : "style-loader",
+    "css-loader", // 用于解析 CSS 文件
+    {
+      loader: "postcss-loader", // 使用 PostCSS 处理 CSS
+      options: {
+        postcssOptions: {
+          plugins: [
+            [
+              "postcss-preset-env", // 使用预设配置来处理 CSS，例如自动添加浏览器前缀
+              {
+                autoprefixer: {
+                  flexbox: "no-2009",
+                },
+                stage: 3,
+              },
+            ],
+          ],
         },
       },
-    ],
-  },
-
-  /* 插件配置，用于扩展 webpack 功能 */
-  plugins: [
-    // 使用 HtmlWebpackPlugin 插件，生成 HTML 文件
-    new HtmlWebpackPlugin({
-      // 指定 HTML 模板文件路径为 public 目录下的 index.html
-      template: path.join(__dirname, "public", "index.html"),
-    }),
-  ],
+    },
+    loader, // 根据传入的 loader 参数添加相应的预处理器，例如 less-loader、sass-loader 等
+  ].filter(Boolean); // 过滤掉数组中的空值
 };
-
 ```
 
-#### package.json 修改以下内容
 
-```json
-"scripts": {
-  "dev": "webpack serve",
-  "build": "webpack"
+module -> rules 合并代码
+```js
+{
+  // 用来匹配 .css 结尾的文件
+  test: /\.css$/,
+  // use 数组里面 Loader 执行顺序是从右到左
+  use: getStyleLoaders(), // 使用 getStyleLoaders 函数获取样式加载器配置
+},
+{
+  // 匹配 .less 结尾的文件
+  test: /\.less$/,
+  // 使用 less-loader 处理 Less 文件
+  use: getStyleLoaders("less-loader"),
+},
+{
+  // 匹配 .sass 或 .scss 结尾的文件
+  test: /\.s(a|c)ss$/,
+  // 使用 sass-loader 处理 Sass/SCSS 文件
+  use: getStyleLoaders("sass-loader"),
+},
+{
+  // 匹配 .styl 结尾的文件
+  test: /\.styl$/,
+  // 使用 stylus-loader 处理 Stylus 文件
+  use: getStyleLoaders("stylus-loader"),
 },
 ```
-#### 运行与打包
 
+### Css 压缩 
+
+CssMinimizerWebpackPlugin：用于在生产环境下压缩和优化 CSS 文件。
 ```
-pnpm run dev
-pnpm run build
+pnpm i css-minimizer-webpack-plugin
+```
+plugins 中添加
+
+```js
+// 如果是生产环境，使用 MiniCssExtractPlugin 插件提取 CSS 到单独文件
+isProduction &&
+  new MiniCssExtractPlugin({
+    filename: "static/css/[name].[contenthash:10].css",
+    chunkFilename: "static/css/[name].[contenthash:10].chunk.css",
+  }),
+```
+
+```js
+/* 优化配置，用于控制 webpack 打包输出的优化行为 */
+optimization: {
+  minimize: isProduction, // 是否进行代码压缩，取决于是否为生产环境
+  minimizer: [new CssMinimizerWebpackPlugin()], // 使用 CssMinimizerWebpackPlugin 插件来压缩 CSS 文件
+},
 ```
