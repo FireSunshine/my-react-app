@@ -159,10 +159,12 @@ module -> rules 合并代码
 ### Css 压缩 
 
 CssMinimizerWebpackPlugin：用于在生产环境下压缩和优化 CSS 文件。
+
 ```
 pnpm i css-minimizer-webpack-plugin
 ```
-plugins 中添加
+
+module -> plugins 中添加
 
 ```js
 // 如果是生产环境，使用 MiniCssExtractPlugin 插件提取 CSS 到单独文件
@@ -172,6 +174,8 @@ isProduction &&
     chunkFilename: "static/css/[name].[contenthash:10].chunk.css",
   }),
 ```
+
+module -> optimization 中添加
 
 ```js
 /* 优化配置，用于控制 webpack 打包输出的优化行为 */
