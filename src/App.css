@@ -6,3 +6,8 @@
   font-size: 24px;
   font-weight: bold;
 }
+.table {
+  img {
+    width: 80px;
+  }
+}
