@@ -50,6 +50,10 @@ module.exports = {
   output: {
     // 指定输出路径为当前目录下的 build 目录
     path: isProduction ? path.resolve(__dirname, "build") : undefined,
+    // 定义 asset 文件的输出路径和名称模板
+    assetModuleFilename: "static/media/[name].[hash:8][ext][query]",
+    // 是否在每次构建前清理输出目录
+    clean: true,
   },
 
   /* 模块配置，定义对不同类型文件的处理规则 */
@@ -142,6 +146,16 @@ module.exports = {
             },
           },
         ],
+      },
+      {
+        // 匹配字体文件（ttf、woff、woff2）和视频文件（avi）的正则表达式
+        test: /\.(ttf|woff2?|map4|map3|avi)$/,
+        // 指定模块的类型为 'asset/resource'，表示将资源作为单独的文件输出，并导出 URL
+        type: "asset/resource",
+        // 生成器配置，用于指定输出文件的名称和路径
+        generator: {
+          filename: "static/media/[name].[hash:8][ext][query]",
+        },
       },
     ],
   },

@@ -7,11 +7,16 @@ import jpgImg from "./assets/images/react.jpg";
 import pngImg from "./assets/images/react.png";
 import svgImg from "./assets/images/react.svg";
 import webpImg from "./assets/images/react.webp";
+import "./assets/styles/iconfont.css";
 import "./App.css";
 
 const App = () => {
   return (
     <div className="app">
+      <div className="fonts">
+        <div className="font1">使用字体图标</div>
+        <div className="font2">使用字体图标</div>
+      </div>
       <table className="table">
         <tbody>
           <tr>
