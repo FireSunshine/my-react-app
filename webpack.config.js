@@ -6,6 +6,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 // 引入 CssMinimizerWebpackPlugin 插件，用于压缩 CSS 文件
 const CssMinimizerWebpackPlugin = require("css-minimizer-webpack-plugin");
+// 引入 TerserWebpackPlugin 插件，用于压缩 JavaScript 文件
+const TerserWebpackPlugin = require("terser-webpack-plugin");
 
 // 判断当前环境是否为生产环境
 const isProduction = process.env.NODE_ENV === "production";
@@ -94,7 +96,7 @@ module.exports = {
           loader: "babel-loader",
           options: {
             // 预设使用 @babel/preset-env 和 @babel/preset-react 进行转换
-            presets: ["@babel/preset-env", "@babel/preset-react"],
+            presets: ["@babel/preset-react"],
           },
         },
       },
@@ -178,6 +180,22 @@ module.exports = {
   /* 优化配置，用于控制 webpack 打包输出的优化行为 */
   optimization: {
     minimize: isProduction, // 是否进行代码压缩，取决于是否为生产环境
-    minimizer: [new CssMinimizerWebpackPlugin()], // 使用 CssMinimizerWebpackPlugin 插件来压缩 CSS 文件
+    minimizer: [
+      // 使用 CssMinimizerWebpackPlugin 插件来压缩 CSS 文件
+      new CssMinimizerWebpackPlugin(),
+      // 使用 TerserWebpackPlugin 插件来压缩 JavaScript 文件
+      new TerserWebpackPlugin(),
+    ],
+  },
+
+  /* 开发服务器 */
+  devServer: {
+    host: "localhost", // 设置服务器的主机名
+    compress: true, // 是否启用 gzip 压缩
+    port: 8080, // 设置端口号，默认是 8080
+    hot: true, // 启用热模块替换
+    open: true, // 是否在启动后自动打开浏览器
+    historyApiFallback: true, // 开启 HTML5 History API 时，任意的 404 响应都会被替代为 index.html
+    // liveReload: false, // 禁用浏览器自动刷新功能
   },
 };
