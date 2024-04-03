@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig to read more about this file */
+
+    /* Language and Environment */
+    "target": "es5", // 目标 ECMAScript 版本
+    "jsx": "react-jsx", // 指定 JSX 语法转换器
+
+    /* Modules */
+    "module": "commonjs", // 指定模块代码生成方式
+    "baseUrl": "./src", // 设置相对路径的基准文件夹
+    "paths": {
+      "@/*": ["*"] // 定义路径别名，方便引入自定义模块
+    },
+    "resolveJsonModule": true, // 允许将 JSON 文件作为模块导入
+
+    /* JavaScript Support */
+    "allowJs": true, // 允许编译 JavaScript 文件
+    "outDir": "./build", // 输出目录
+
+    /* Interop Constraints */
+    "esModuleInterop": true, // 启用模块间的 ES 模块兼容性
+    "forceConsistentCasingInFileNames": true, // 强制文件名大小写一致
+
+    /* Type Checking */
+    "strict": true, // 启用所有严格类型检查选项
+
+    /* Completeness */
+    "skipLibCheck": true // 跳过引入文件的类型检查
+  }
+}

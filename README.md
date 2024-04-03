@@ -1,77 +1,155 @@
-# Webpack5 + React 配置开发服务器 & 处理 JS 文件
+# Webpack5 + React + TS
 
 ## 前言
 
-在配置开发环境时，设置开发服务器是一个必要的步骤，它能够提供一个便捷的开发环境，使开发者能够实时预览应用的变化，并且能够处理模块热替换等功能，提高开发效率。
+在搭建了 Webpack5 + React + JavaScript 的项目之后，接下来进一步完善这个项目，集成 TypeScript。
 
-同时，Webpack 也能够处理 JavaScript 文件，包括转译 JSX、ES6+ 语法，以及代码分割、压缩等功能，使得项目在生产环境下能够更加高效地加载和执行。
+TypeScript 作为 JavaScript 的超集，提供了静态类型检查的功能，大大减少了代码中的错误，并提高了代码的可读性和可维护性。
 
-### 处理 js 文件
+###  使用 `@babel/preset-typescript`
+
+@babel/preset-typescript 是 Babel 的一个预设，用于在 Babel 中支持 TypeScript。如果项目中已经使用 babel-loader，可以选择使用 @babel/preset-typescript 规则集，借助 babel-loader 完成 JavaScript 与 TypeScript 的转码工作，但是 @babel/preset-typescript 只是简单完成代码转换，**跳过了类型检查步骤**，构建时没有类型安全性。
+
 
 ```
-pnpm i babel-loader @babel/core @babel/preset-react
+pnpm i @babel/preset-typescript
 ```
-
-@babel/core 是 Babel 的核心模块，用于将新版 JavaScript 编译为旧版 JavaScript。
-
-@babel/preset-react 是 Babel 的预设插件，用于识别和编译 React 代码。
-
-babel-loader 是 webpack 的加载器，用于在打包过程中通过 Babel 处理 JavaScript 文件。
-
-#### module -> rules 添加对 jsx 和 js 文件的处理
 
 ```js
+module.exports = {
+  /* ... */
+  module: {
+    rules: [
+      {
+        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
+        test: /\.(ts|js)x?$/,
+        // 排除 node_modules 目录下的文件
+        exclude: /node_modules/,
+        // 使用 babel-loader 进行处理
+        use: {
+          loader: "babel-loader",
+          options: {
+            // 预设使用 @babel/preset-react 和 @babel/preset-typescript 进行转换
+            presets: ["@babel/preset-react", "@babel/preset-typescript"],
+          },
+        },
+      },
+    ],
+  },
+};
+```
+
+### 使用 `ts-loader`
+
+```
+pnpm i ts-loader @types/react @types/react-dom
+```
+
+ts-loader：ts-loader 是 webpack 的一个加载器，用于在 webpack 构建过程中编译 TypeScript 文件。它允许您在 webpack 中使用 TypeScript，并在构建时将 TypeScript 文件转换为 JavaScript。**它的优点是具有构建时的类型安全性，但缺点是编译速度可能较慢。**
+
+@types/react 和 @types/react-dom：这两个包是 TypeScript 的类型定义文件，用于提供 React 和 React-DOM 库的类型定义。
+
+```js
+module.exports = {
+  /* ... */
+  module: {
+    rules: [
+      {
+        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
+        test: /\.(ts|js)x?$/,
+        // 排除 node_modules 目录下的文件
+        exclude: /node_modules/,
+        // 使用 ts-loader 进行处理
+        use: "ts-loader",
+      },
+    ],
+  },
+};
+```
+
+执行 `npx tsc --init` 生成 tsconfig.json 文件， 并添加以下内容
+
+
+```json
 {
-  // 正则表达式匹配文件路径，以 .js 或 .jsx 结尾的文件
-  test: /\.jsx?$/,
-  // 排除 node_modules 目录下的文件
-  exclude: /node_modules/,
-  // 使用 babel-loader 进行处理
-  use: {
-    loader: "babel-loader",
-    options: {
-      // 预设使用 @babel/preset-react 进行转换
-      presets: ["@babel/preset-react"],
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig to read more about this file */
+
+    /* Language and Environment */
+    "target": "es5", // 目标 ECMAScript 版本
+    "jsx": "react-jsx", // 指定 JSX 语法转换器
+
+    /* Modules */
+    "module": "commonjs", // 指定模块代码生成方式
+    "baseUrl": "./src", // 设置相对路径的基准文件夹
+    "paths": {
+      "@/*": ["*"] // 定义路径别名，方便引入自定义模块
     },
+    "resolveJsonModule": true, // 允许将 JSON 文件作为模块导入
+
+    /* JavaScript Support */
+    "allowJs": true, // 允许编译 JavaScript 文件
+    "outDir": "./build", // 输出目录
+
+    /* Interop Constraints */
+    "esModuleInterop": true, // 启用模块间的 ES 模块兼容性
+    "forceConsistentCasingInFileNames": true, // 强制文件名大小写一致
+
+    /* Type Checking */
+    "strict": true, // 启用所有严格类型检查选项
+
+    /* Completeness */
+    "skipLibCheck": true // 跳过引入文件的类型检查
+  }
+}
+```
+
+extensions: 引入模块时自动解析的文件扩展名。Webpack 将自动尝试解析 ".ts"、".tsx"、".js" 和 ".jsx" 这些文件扩展名的模块。这样做可以使得在 import 模块时不需要指定文件的具体扩展名，提高开发效率。
+
+alias: 为模块路径设置别名 @ 。使用 @ 来代替 "src" 目录的绝对路径。例如，通过 `import "@/components/Header"` 来引入 `"src/components/Header"` 目录下的组件。
+
+
+```js
+resolve: {
+  // 自动补全文件扩展名
+  extensions: [".ts", ".tsx", ".js", ".jsx"],
+  alias: {
+    "@": path.resolve(__dirname, "src"),
   },
 },
 ```
 
-#### terser-webpack-plugin 插件压缩 js 文件
+另外为了解析图片的类型声明，新建 images.d.ts
 
-`terser-webpack-plugin` 是 webpack 的内置插件，无需额外安装
+```ts
+declare module '*.gif' {
+  const value: string;
+  export default value;
+}
 
-optimization -> minimizer 添加
+declare module '*.jpeg' {
+  const value: string;
+  export default value;
+}
 
-```js
-/* 优化配置，用于控制 webpack 打包输出的优化行为 */
-optimization: {
-  minimize: isProduction, // 是否进行代码压缩，取决于是否为生产环境
-  minimizer: [
-    // 使用 TerserWebpackPlugin 插件来压缩 JavaScript 文件
-    new TerserWebpackPlugin(),
-  ],
-},
-```
+declare module '*.jpg' {
+  const value: string;
+  export default value;
+}
 
-### 开发服务器配置
+declare module '*.png' {
+  const value: string;
+  export default value;
+}
 
-```
-pnpm i webpack-dev-server
-```
+declare module '*.svg' {
+  const value: string;
+  export default value;
+}
 
-配置以下内容
-
-```js
-/* 开发服务器 */
-devServer: {
-  host: "localhost", // 设置服务器的主机名
-  compress: true, // 是否启用 gzip 压缩
-  port: 8080, // 设置端口号，默认是 8080
-  hot: true, // 启用热模块替换
-  open: true, // 是否在启动后自动打开浏览器
-  historyApiFallback: true, // 开启 HTML5 History API 时，任意的 404 响应都会被替代为 index.html
-  // liveReload: false, // 禁用浏览器自动刷新功能
-},
+declare module '*.webp' {
+  const value: string;
+  export default value;
+}
 ```
 

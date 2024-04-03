@@ -46,7 +46,7 @@ module.exports = {
   mode: isProduction ? "production" : "development",
 
   /* 入口文件 */
-  entry: path.join(__dirname, "src", "index.js"), // 指定入口文件路径为 src 目录下的 index.js
+  entry: path.join(__dirname, "src", "index.tsx"), // 指定入口文件路径为 src 目录下的 index.js
 
   /* 输出文件 */
   output: {
@@ -87,18 +87,12 @@ module.exports = {
         use: getStyleLoaders("stylus-loader"),
       },
       {
-        // 正则表达式匹配文件路径，以 .js 或 .jsx 结尾的文件
-        test: /\.jsx?$/,
+        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
+        test: /\.(ts|js)x?$/,
         // 排除 node_modules 目录下的文件
         exclude: /node_modules/,
-        // 使用 babel-loader 进行处理
-        use: {
-          loader: "babel-loader",
-          options: {
-            // 预设使用 @babel/preset-env 和 @babel/preset-react 进行转换
-            presets: ["@babel/preset-react"],
-          },
-        },
+        // 使用 ts-loader 进行处理
+        use: "ts-loader",
       },
       {
         // 检查文件是否为图片类型（png、jpeg、jpg、gif、webp、svg）
@@ -186,6 +180,15 @@ module.exports = {
       // 使用 TerserWebpackPlugin 插件来压缩 JavaScript 文件
       new TerserWebpackPlugin(),
     ],
+  },
+
+  /* 解析模块加载器选项 */
+  resolve: {
+    // 自动补全文件扩展名
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
   },
 
   /* 开发服务器 */
