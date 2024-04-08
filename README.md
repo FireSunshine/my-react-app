@@ -1,155 +1,292 @@
-# Webpack5 + React + TS
+# React + TS 集成 EsLint + Prettier
 
 ## 前言
 
-在搭建了 Webpack5 + React + JavaScript 的项目之后，接下来进一步完善这个项目，集成 TypeScript。
+[EsLint](https://eslint.org/) 和 [Prettier](https://prettier.io/) 可以规范化的代码风格以及建立一套严格的代码质量检查机制。EsLint 可以帮助我们规范化代码风格；而 Prettier 则可以自动格式化我们的代码，使其保持整洁、易读。
 
-TypeScript 作为 JavaScript 的超集，提供了静态类型检查的功能，大大减少了代码中的错误，并提高了代码的可读性和可维护性。
+### EsLint
 
-###  使用 `@babel/preset-typescript`
-
-@babel/preset-typescript 是 Babel 的一个预设，用于在 Babel 中支持 TypeScript。如果项目中已经使用 babel-loader，可以选择使用 @babel/preset-typescript 规则集，借助 babel-loader 完成 JavaScript 与 TypeScript 的转码工作，但是 @babel/preset-typescript 只是简单完成代码转换，**跳过了类型检查步骤**，构建时没有类型安全性。
-
+安装 ESLint
 
 ```
-pnpm i @babel/preset-typescript
+pnpm i eslint
 ```
+
+安装 ESLint 后，使用以下命令创建一个配置文件
+
+```
+npx eslint --init
+```
+
+这将提出一系列问题。根据您的项目要求回答这些问题
+
+```
+? How would you like to use ESLint? …
+  To check syntax only
+❯ To check syntax and find problems
+  To check syntax, find problems, and enforce code style
+
+✔ How would you like to use ESLint? · problems
+? What type of modules does your project use? …
+❯ JavaScript modules (import/export)
+  CommonJS (require/exports)
+  None of these
+
+✔ How would you like to use ESLint? · problems
+✔ What type of modules does your project use? · esm
+? Which framework does your project use? …
+❯ React
+  Vue.js
+  None of these
+
+✔ How would you like to use ESLint? · problems
+✔ What type of modules does your project use? · esm
+✔ Which framework does your project use? · react
+? Does your project use TypeScript? › No / Yes
+
+✔ How would you like to use ESLint? · problems
+✔ What type of modules does your project use? · esm
+✔ Which framework does your project use? · react
+✔ Does your project use TypeScript? · No / Yes
+? Where does your code run? …  (Press <space> to select, <a> to toggle all, <i> to invert selection)
+✔ Browser
+✔ Node
+
+✔ How would you like to use ESLint? · problems
+✔ What type of modules does your project use? · esm
+✔ Which framework does your project use? · react
+✔ Does your project use TypeScript? · No / Yes
+✔ Where does your code run? · browser
+? What format do you want your config file to be in? …
+❯ JavaScript
+  YAML
+  JSON
+
+✔ How would you like to use ESLint? · problems
+✔ What type of modules does your project use? · esm
+✔ Which framework does your project use? · react
+✔ Does your project use TypeScript? · No / Yes
+✔ Where does your code run? · browser
+✔ What format do you want your config file to be in? · JavaScript
+Local ESLint installation not found.
+The config that you've selected requires the following dependencies:
+
+@typescript-eslint/eslint-plugin@latest eslint-plugin-react@latest @typescript-eslint/parser@latest eslint@latest
+? Would you like to install them now? › No / Yes
+
+✔ How would you like to use ESLint? · problems
+✔ What type of modules does your project use? · esm
+✔ Which framework does your project use? · react
+✔ Does your project use TypeScript? · No / Yes
+✔ Where does your code run? · browser
+✔ What format do you want your config file to be in? · JavaScript
+Local ESLint installation not found.
+The config that you've selected requires the following dependencies:
+
+@typescript-eslint/eslint-plugin@latest eslint-plugin-react@latest @typescript-eslint/parser@latest eslint@latest
+✔ Would you like to install them now? · No / Yes
+? Which package manager do you want to use? …
+  npm
+  yarn
+❯ pnpm
+```
+
+通过上面的问题，将会安装以下依赖，并自动在根目录创建一个 .eslintrc.js 的文件
+
+@typescript-eslint/eslint-plugin: 这是一个用于 TypeScript 项目的 ESLint 插件。它提供了一组规则，用于检查 TypeScript 代码中的常见问题，并提供了一些额外的功能，例如类型检查和类型推断。该插件包含了一系列可以在 TypeScript 项目中使用的 ESLint 规则。
+
+eslint-plugin-react: 这是一个用于 React 项目的 ESLint 插件。它提供了一组规则，用于检查 React 组件的代码，并确保它们符合最佳实践和风格指南。这些规则涵盖了 JSX 语法、React 组件的命名、生命周期方法的使用等方面。
+
+@typescript-eslint/parser: 这是一个用于解析 TypeScript 代码的 ESLint 解析器。解析器负责将 TypeScript 代码解析为抽象语法树（AST），以便 ESLint 插件和规则可以分析和处理代码。@typescript-eslint/parser 解析器专门用于解析 TypeScript 代码，以便在 TypeScript 项目中进行代码检查和规范。
+
+.eslintrc.js 文件
 
 ```js
 module.exports = {
-  /* ... */
-  module: {
-    rules: [
-      {
-        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
-        test: /\.(ts|js)x?$/,
-        // 排除 node_modules 目录下的文件
-        exclude: /node_modules/,
-        // 使用 babel-loader 进行处理
-        use: {
-          loader: "babel-loader",
-          options: {
-            // 预设使用 @babel/preset-react 和 @babel/preset-typescript 进行转换
-            presets: ["@babel/preset-react", "@babel/preset-typescript"],
-          },
-        },
-      },
-    ],
+  env: {
+    browser: true,
+    es2021: true,
   },
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'plugin:react/recommended'],
+  overrides: [
+    {
+      env: {
+        node: true,
+      },
+      files: ['.eslintrc.{js,cjs}'],
+      parserOptions: {
+        sourceType: 'script',
+      },
+    },
+  ],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+  },
+  plugins: ['@typescript-eslint', 'react'],
+  rules: {},
 };
 ```
 
-### 使用 `ts-loader`
+只需在 rules 中添加一些配置 ESLint 规则
+
+检查当前目录下所有文件是否符合 ESLint 规则：
 
 ```
-pnpm i ts-loader @types/react @types/react-dom
+npx eslint .
 ```
 
-ts-loader：ts-loader 是 webpack 的一个加载器，用于在 webpack 构建过程中编译 TypeScript 文件。它允许您在 webpack 中使用 TypeScript，并在构建时将 TypeScript 文件转换为 JavaScript。**它的优点是具有构建时的类型安全性，但缺点是编译速度可能较慢。**
+修复代码中的 ESLint 错误和警告
 
-@types/react 和 @types/react-dom：这两个包是 TypeScript 的类型定义文件，用于提供 React 和 React-DOM 库的类型定义。
+```
+npx eslint --fix .
+```
+
+### Prettier
+
+```
+pnpm i prettier eslint-config-prettier eslint-plugin-prettier
+```
+
+prettier: Prettier 是一个代码格式化工具，用于自动格式化代码以符合统一的风格。
+
+eslint-config-prettier: 这是一个 ESLint 配置，用于禁用 ESLint 中与 Prettier 冲突的格式化规则，以确保 Prettier 和 ESLint 协同工作。
+
+eslint-plugin-prettier: 这是一个 ESLint 插件，用于在 ESLint 中运行 Prettier，并将 Prettier 的格式化结果作为 ESLint 的一部分输出。
+
+在项目根目录新建 .prettierrc.js 文件，并添加以下内容
 
 ```js
 module.exports = {
-  /* ... */
-  module: {
-    rules: [
-      {
-        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
-        test: /\.(ts|js)x?$/,
-        // 排除 node_modules 目录下的文件
-        exclude: /node_modules/,
-        // 使用 ts-loader 进行处理
-        use: "ts-loader",
-      },
-    ],
-  },
+  // 一行的字符数，如果超过会进行换行，默认为 80
+  printWidth: 120,
+  // 一个 tab 代表几个空格数，默认为 2
+  tabWidth: 2,
+  // 是否使用 tab 进行缩进，默认为 false，表示用空格进行缩减
+  useTabs: false,
+  // 行尾是否需要分号，默认为 true
+  semi: true,
+  // 是否使用单引号，默认为 false，使用双引号
+  singleQuote: true,
+  // jsx 是否使用单引号，默认为 false，使用双引号
+  jsxSingleQuote: true,
+  // 末尾是否需要逗号，有三个可选值 "<none|es5|all>"
+  // "<none>" 代表不需要逗号
+  // "<es5>" 代表ES5中需要逗号
+  // "<all>" 代表所有对象最后一个属性添加逗号
+  trailingComma: 'all',
+  // 对象大括号直接是否有空格，默认为 true，效果：{ foo: bar }
+  bracketSpacing: true,
+  // 箭头函数，只有一个参数的时候，是否需要括号，默认为 avoid，有两个可选值 "avoid" 和 "always"
+  arrowParens: 'avoid',
 };
 ```
 
-执行 `npx tsc --init` 生成 tsconfig.json 文件， 并添加以下内容
+在 .eslintrc.js 文件中 extends 添加 `plugin:prettier/recommended`
 
+```js
+"extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:prettier/recommended"
+],
+```
+
+在 .eslintrc.js 文件中 plugins 添加 `prettier`
+
+```js
+"plugins": [
+    "@typescript-eslint",
+    "react",
+    "prettier"
+],
+```
+
+格式化当前目录下所有文件
+
+```
+npx prettier . --write
+pnpm exec prettier . --write
+```
+
+#### 更新 .eslintrc.js 配置
+
+```js
+module.exports = {
+  // 定义环境
+  env: { browser: true, es2021: true, node: true },
+
+  // 指定解析器
+  parser: '@typescript-eslint/parser',
+
+  // 扩展规则
+  extends: [
+    'eslint:recommended', // 使用 ESLint 推荐的规则
+    'plugin:@typescript-eslint/recommended', // 使用 @typescript-eslint 推荐的规则
+    'plugin:react/recommended', // 使用 React 推荐的规则
+    'plugin:prettier/recommended', // 启用 Prettier 与 ESLint 的集成
+  ],
+
+  // 解析器选项
+  parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+
+  // 插件
+  plugins: ['@typescript-eslint', 'react', 'prettier'],
+
+  // 设置
+  settings: { react: { version: 'detect' } },
+
+  // 规则配置
+  rules: {
+    // TypeScript 相关规则
+    '@typescript-eslint/no-explicit-any': 'error', // 禁止使用 any 类型
+    '@typescript-eslint/no-unused-vars': 'warn', // 禁止未使用的变量
+    '@typescript-eslint/explicit-function-return-type': 'off', // 关闭函数返回类型的显式声明
+    '@typescript-eslint/no-empty-function': 'error', // 禁止空函数
+    '@typescript-eslint/no-non-null-assertion': 'error', // 禁止使用非空断言
+    '@typescript-eslint/no-var-requires': 'off', // 关闭禁止使用 require 语句的检查
+
+    // React 相关规则
+    'react/prop-types': 'off', // 关闭 Prop-types 的检查
+    'react/display-name': 'off', // 关闭组件 display name 的检查
+    'react/no-unescaped-entities': 'error', // 禁止在字符串和注释中使用未转义的特殊字符
+    'react/jsx-uses-react': 'off', // 关闭检查 JSX 中是否导入了 React
+    'react/jsx-uses-vars': 'error', // 检查是否使用了 JSX 变量
+    'react/react-in-jsx-scope': 'off', // 关闭检查 JSX 中是否导入了 React（通常由 Babel 处理，因此在 TypeScript 中可以关闭）
+
+    // 其他规则
+    'no-console': 'warn', // 警告不允许使用 console
+    'no-unused-vars': 'warn', // 警告未使用的变量
+    'no-undef': 'error', // 禁止使用未声明的变量
+    'prettier/prettier': 'error', // 强制执行 Prettier 格式化规则
+  },
+
+  // 忽略指定文件或目录
+  ignorePatterns: ['/node_modules/**', '/build/**'],
+
+  // 覆盖配置
+  overrides: [
+    {
+      files: ['src/**/*.ts', 'src/**/*.tsx'],
+      excludedFiles: 'node_modules/**',
+      rules: {
+        // 在这里添加只对 src 文件夹生效的规则
+      },
+    },
+  ],
+};
+```
+
+在 VSCode 中可以配置自动修复 ESLint 错误，项目根目录新建 .vscode 文件夹，创建 settings.json 文件，添加以下内容
 
 ```json
 {
-  "compilerOptions": {
-    /* Visit https://aka.ms/tsconfig to read more about this file */
-
-    /* Language and Environment */
-    "target": "es5", // 目标 ECMAScript 版本
-    "jsx": "react-jsx", // 指定 JSX 语法转换器
-
-    /* Modules */
-    "module": "commonjs", // 指定模块代码生成方式
-    "baseUrl": "./src", // 设置相对路径的基准文件夹
-    "paths": {
-      "@/*": ["*"] // 定义路径别名，方便引入自定义模块
-    },
-    "resolveJsonModule": true, // 允许将 JSON 文件作为模块导入
-
-    /* JavaScript Support */
-    "allowJs": true, // 允许编译 JavaScript 文件
-    "outDir": "./build", // 输出目录
-
-    /* Interop Constraints */
-    "esModuleInterop": true, // 启用模块间的 ES 模块兼容性
-    "forceConsistentCasingInFileNames": true, // 强制文件名大小写一致
-
-    /* Type Checking */
-    "strict": true, // 启用所有严格类型检查选项
-
-    /* Completeness */
-    "skipLibCheck": true // 跳过引入文件的类型检查
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit",
+    "eslint.autoFixOnSave": "explicit"
   }
 }
 ```
-
-extensions: 引入模块时自动解析的文件扩展名。Webpack 将自动尝试解析 ".ts"、".tsx"、".js" 和 ".jsx" 这些文件扩展名的模块。这样做可以使得在 import 模块时不需要指定文件的具体扩展名，提高开发效率。
-
-alias: 为模块路径设置别名 @ 。使用 @ 来代替 "src" 目录的绝对路径。例如，通过 `import "@/components/Header"` 来引入 `"src/components/Header"` 目录下的组件。
-
-
-```js
-resolve: {
-  // 自动补全文件扩展名
-  extensions: [".ts", ".tsx", ".js", ".jsx"],
-  alias: {
-    "@": path.resolve(__dirname, "src"),
-  },
-},
-```
-
-另外为了解析图片的类型声明，新建 images.d.ts
-
-```ts
-declare module '*.gif' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.jpeg' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.jpg' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.png' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.svg' {
-  const value: string;
-  export default value;
-}
-
-declare module '*.webp' {
-  const value: string;
-  export default value;
-}
-```
-

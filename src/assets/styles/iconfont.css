@@ -1,22 +1,24 @@
 @font-face {
-  font-family: "Iconfont1";
+  font-family: 'Iconfont1';
   font-weight: 400;
-  src: url("../fonts/AlimamaFangYuanTiVF-Thin.woff") format("woff2"),
-    url("../fonts/AlimamaFangYuanTiVF-Thin.woff2") format("woff");
+  src:
+    url('../fonts/AlimamaFangYuanTiVF-Thin.woff') format('woff2'),
+    url('../fonts/AlimamaFangYuanTiVF-Thin.woff2') format('woff');
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Iconfont2";
+  font-family: 'Iconfont2';
   font-weight: 400;
-  src: url("../fonts/AlimamaDongFangDaKai-Regular.otf") format("opentype"),
-    url("../fonts/AlimamaDongFangDaKai-Regular.ttf") format("truetype");
+  src:
+    url('../fonts/AlimamaDongFangDaKai-Regular.otf') format('opentype'),
+    url('../fonts/AlimamaDongFangDaKai-Regular.ttf') format('truetype');
   font-display: swap;
 }
 
 .font1 {
-  font-family: "Iconfont1", sans-serif;
+  font-family: 'Iconfont1', sans-serif;
 }
 .font2 {
-  font-family: "Iconfont2", sans-serif;
+  font-family: 'Iconfont2', sans-serif;
 }
