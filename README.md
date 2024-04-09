@@ -1,8 +1,10 @@
-# React + TS 集成 EsLint + Prettier
+# React + TS 集成 EsLint + Prettier + Husky + Lint-Staged + Commitlint
 
 ## 前言
 
 [EsLint](https://eslint.org/) 和 [Prettier](https://prettier.io/) 可以规范化的代码风格以及建立一套严格的代码质量检查机制。EsLint 可以帮助我们规范化代码风格；而 Prettier 则可以自动格式化我们的代码，使其保持整洁、易读。
+
+Husky、Lint-Staged 和 Commitlint 进一步加强了代码质量管理流程。Husky 可以在 Git Hooks 中执行脚本，Lint-Staged 可以在 Git 暂存区中运行 EsLint 和 Prettier，而 Commitlint 则规范化了我们的提交信息。
 
 ### EsLint
 
@@ -289,4 +291,93 @@ module.exports = {
     "eslint.autoFixOnSave": "explicit"
   }
 }
+```
+
+### Husky
+
+```
+pnpm i husky
+
+pnpm exec husky init
+```
+
+安装 husky 后，执行 `pnpm exec husky init` 命令，之后会在根目录生成 .husky 文件，并更新 package.json 文件
+
+```json
+"scripts": {
+  "prepare": "husky"
+},
+```
+
+### Lint-Staged
+
+```
+npm i lint-staged
+```
+
+使用预提交钩子检查暂存文件，并将以下代码更新到 .husky/pre-commit 文件中
+
+```
+npx lint-staged
+```
+
+在 package.json 文件中添加以下 lint-staged 配置
+
+```json
+"lint-staged": {
+  "*.{js,jsx,ts,tsx,json}": [
+    "eslint --fix"
+  ],
+  "*.{js,jsx,ts,tsx,json,css,scss,less,md}": [
+    "prettier --write"
+  ]
+},
+```
+
+### Commitlint
+
+```
+pnpm i @commitlint/{config-conventional,cli}
+```
+
+在项目根目录下创建 commitlint.config.js 文件，并添加以下内容
+
+```js
+module.exports = {
+  extends: ['@commitlint/config-conventional'],
+};
+```
+
+将以下代码更新到 .husky/commit-msg 文件
+
+```
+npx --no-install commitlint --edit "$1"
+```
+
+到此，我们就完成代码规范的基本配置，以下是代码提交格式
+
+```
+[
+  'build',     // 对项目构建或外部依赖项的更改
+  'chore',     // 对构建过程或辅助工具的更改
+  'ci',        // 对持续集成 (CI) 配置文件和脚本的更改
+  'docs',      // 对文档的更改
+  'feat',      // 添加新功能
+  'fix',       // 修复 bug
+  'perf',      // 对性能的改进
+  'refactor',  // 对代码重构的更改
+  'revert',    // 撤销之前的提交
+  'style',     // 对代码风格、格式的更改，不影响代码逻辑
+  'test'       // 添加或修改测试代码
+];
+
+echo "foo: some message" # fails
+echo "fix: some message" # passes
+
+echo "fix(SCOPE): Some message" # fails
+echo "fix(SCOPE): Some Message" # fails
+echo "fix(SCOPE): SomeMessage" # fails
+echo "fix(SCOPE): SOMEMESSAGE" # fails
+echo "fix(scope): some message" # passes
+echo "fix(scope): some Message" # passes
 ```
