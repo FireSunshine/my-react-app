@@ -1,0 +1,13 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+.app {
+  font-size: 24px;
+  font-weight: bold;
+}
+.table {
+  img {
+    width: 80px;
+  }
+}
