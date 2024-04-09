@@ -1,0 +1,10 @@
+@font-face {
+  font-family: 'Iconfont1';
+  font-weight: 400;
+  src: url('../assets/fonts/AlimamaDongFangDaKai-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+.font1 {
+  font-family: 'Iconfont1', sans-serif;
+}
