@@ -8,7 +8,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerWebpackPlugin = require('css-minimizer-webpack-plugin');
 // 引入 TerserWebpackPlugin 插件，用于压缩 JavaScript 文件
 const TerserWebpackPlugin = require('terser-webpack-plugin');
-
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 // 判断当前环境是否为生产环境
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -60,6 +60,7 @@ module.exports = {
 
   /* 模块配置，定义对不同类型文件的处理规则 */
   module: {
+    noParse: /lodash|jquery/,
     // 定义规则数组
     rules: [
       {
@@ -90,9 +91,17 @@ module.exports = {
         // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
         test: /\.(ts|js)x?$/,
         // 排除 node_modules 目录下的文件
+        // include: path.resolve(__dirname, "../src"), // 也可以用包含
         exclude: /node_modules/,
         // 使用 ts-loader 进行处理
-        use: 'ts-loader',
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true,
+            },
+          },
+        ],
       },
       {
         // 检查文件是否为图片类型（png、jpeg、jpg、gif、webp、svg）
@@ -169,6 +178,8 @@ module.exports = {
         filename: 'static/css/[name].[contenthash:8].css',
         chunkFilename: 'static/css/[name].[contenthash:8].chunk.css',
       }),
+    // fork 出子进程，专门用于执行类型检查
+    new ForkTsCheckerWebpackPlugin(),
   ],
 
   /* 优化配置，用于控制 webpack 打包输出的优化行为 */
@@ -182,6 +193,10 @@ module.exports = {
     ],
   },
 
+  cache: {
+    type: 'filesystem',
+  },
+
   /* 解析模块加载器选项 */
   resolve: {
     // 自动补全文件扩展名
@@ -189,6 +204,8 @@ module.exports = {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
+    // 配置模块解析路径，首先在 'src' 目录下查找，然后再去 'node_modules' 目录查找所需的模块
+    modules: [path.resolve(__dirname, 'src'), 'node_modules'],
   },
 
   /* 开发服务器 */

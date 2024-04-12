@@ -1,383 +1,231 @@
-# React + TS 集成 EsLint + Prettier + Husky + Lint-Staged + Commitlint
+# Webpack 提升打包构建速度
 
 ## 前言
 
-[EsLint](https://eslint.org/) 和 [Prettier](https://prettier.io/) 可以规范化的代码风格以及建立一套严格的代码质量检查机制。EsLint 可以帮助我们规范化代码风格；而 Prettier 则可以自动格式化我们的代码，使其保持整洁、易读。
+随着项目复杂度的增加，Webpack的构建时间可能会显著增加，为了提高开发效率和用户体验，优化Webpack的构建速度和性能成为至关重要的任务。
 
-Husky、Lint-Staged 和 Commitlint 进一步加强了代码质量管理流程。Husky 可以在 Git Hooks 中执行脚本，Lint-Staged 可以在 Git 暂存区中运行 EsLint 和 Prettier，而 Commitlint 则规范化了我们的提交信息。
+### cache 缓存
 
-### EsLint
+Webpack 的缓存机制是指在构建过程中对已经构建过的模块进行缓存，以便在下一次构建时能够复用这些模块。
 
-安装 ESLint
+Webpack5 会将首次构建出的 Module、Chunk、ModuleGraph 等对象序列化后保存到硬盘中，后面再运行的时候，就可以跳过许多耗时的编译动作，直接复用缓存数据。从而显著提高Webpack的构建速度，特别是在大型项目中。
 
-```
-pnpm i eslint
-```
-
-安装 ESLint 后，使用以下命令创建一个配置文件
-
-```
-npx eslint --init
-```
-
-这将提出一系列问题。根据您的项目要求回答这些问题
-
-```
-? How would you like to use ESLint? …
-  To check syntax only
-❯ To check syntax and find problems
-  To check syntax, find problems, and enforce code style
-
-✔ How would you like to use ESLint? · problems
-? What type of modules does your project use? …
-❯ JavaScript modules (import/export)
-  CommonJS (require/exports)
-  None of these
-
-✔ How would you like to use ESLint? · problems
-✔ What type of modules does your project use? · esm
-? Which framework does your project use? …
-❯ React
-  Vue.js
-  None of these
-
-✔ How would you like to use ESLint? · problems
-✔ What type of modules does your project use? · esm
-✔ Which framework does your project use? · react
-? Does your project use TypeScript? › No / Yes
-
-✔ How would you like to use ESLint? · problems
-✔ What type of modules does your project use? · esm
-✔ Which framework does your project use? · react
-✔ Does your project use TypeScript? · No / Yes
-? Where does your code run? …  (Press <space> to select, <a> to toggle all, <i> to invert selection)
-✔ Browser
-✔ Node
-
-✔ How would you like to use ESLint? · problems
-✔ What type of modules does your project use? · esm
-✔ Which framework does your project use? · react
-✔ Does your project use TypeScript? · No / Yes
-✔ Where does your code run? · browser
-? What format do you want your config file to be in? …
-❯ JavaScript
-  YAML
-  JSON
-
-✔ How would you like to use ESLint? · problems
-✔ What type of modules does your project use? · esm
-✔ Which framework does your project use? · react
-✔ Does your project use TypeScript? · No / Yes
-✔ Where does your code run? · browser
-✔ What format do you want your config file to be in? · JavaScript
-Local ESLint installation not found.
-The config that you've selected requires the following dependencies:
-
-@typescript-eslint/eslint-plugin@latest eslint-plugin-react@latest @typescript-eslint/parser@latest eslint@latest
-? Would you like to install them now? › No / Yes
-
-✔ How would you like to use ESLint? · problems
-✔ What type of modules does your project use? · esm
-✔ Which framework does your project use? · react
-✔ Does your project use TypeScript? · No / Yes
-✔ Where does your code run? · browser
-✔ What format do you want your config file to be in? · JavaScript
-Local ESLint installation not found.
-The config that you've selected requires the following dependencies:
-
-@typescript-eslint/eslint-plugin@latest eslint-plugin-react@latest @typescript-eslint/parser@latest eslint@latest
-✔ Would you like to install them now? · No / Yes
-? Which package manager do you want to use? …
-  npm
-  yarn
-❯ pnpm
-```
-
-通过上面的问题，将会安装以下依赖，并自动在根目录创建一个 .eslintrc.js 的文件
-
-@typescript-eslint/eslint-plugin: 这是一个用于 TypeScript 项目的 ESLint 插件。它提供了一组规则，用于检查 TypeScript 代码中的常见问题，并提供了一些额外的功能，例如类型检查和类型推断。该插件包含了一系列可以在 TypeScript 项目中使用的 ESLint 规则。
-
-eslint-plugin-react: 这是一个用于 React 项目的 ESLint 插件。它提供了一组规则，用于检查 React 组件的代码，并确保它们符合最佳实践和风格指南。这些规则涵盖了 JSX 语法、React 组件的命名、生命周期方法的使用等方面。
-
-@typescript-eslint/parser: 这是一个用于解析 TypeScript 代码的 ESLint 解析器。解析器负责将 TypeScript 代码解析为抽象语法树（AST），以便 ESLint 插件和规则可以分析和处理代码。@typescript-eslint/parser 解析器专门用于解析 TypeScript 代码，以便在 TypeScript 项目中进行代码检查和规范。
-
-.eslintrc.js 文件
+仅仅需要在 Webpack5 中设置 `cache.type = 'filesystem'` 即可开启
 
 ```js
 module.exports = {
-  env: {
-    browser: true,
-    es2021: true,
+  //...
+  cache: {
+    type: 'filesystem',
   },
-  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'plugin:react/recommended'],
-  overrides: [
-    {
-      env: {
-        node: true,
-      },
-      files: ['.eslintrc.{js,cjs}'],
-      parserOptions: {
-        sourceType: 'script',
-      },
-    },
-  ],
-  parser: '@typescript-eslint/parser',
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-  },
-  plugins: ['@typescript-eslint', 'react'],
-  rules: {},
+  //...
 };
 ```
 
-只需在 rules 中添加一些配置 ESLint 规则
+[但是在 webpack 中默认情况下不启用持久缓存](https://github.com/webpack/changelog-v5/blob/master/guides/persistent-caching.md)
 
-检查当前目录下所有文件是否符合 ESLint 规则：
+webpack also needs to invalidate cache entries:
+
+when you npm upgrade a loader or plugin
+
+when you change your configuration
+
+when you change a file that is being read in the configuration
+
+when you npm upgrade a dependency that is used in the configuration
+
+when you pass different command-line arguments to your build script
+
+when you have a custom build script and change that
+
+webpack 无法在开箱后处理所有这些情况。这就是为什么 webpack 选择了安全的方式，将持久缓存作为一项选择性功能。
+
+### thread-loader 多进程打包
 
 ```
-npx eslint .
+pnpm i thread-loader
 ```
 
-修复代码中的 ESLint 错误和警告
+thread-loader 可以通过将工作任务分配给多个工作线程来提高构建性能
 
-```
-npx eslint --fix .
-```
+**需要注意**，每个 worker 都是一个单独的 node.js 进程，其开销约为600毫秒，还有进程间通信的开销。所以仅在特别耗时的操作中使用，**特别适用于耗时的 loader 操作**。
 
-### Prettier
-
-```
-pnpm i prettier eslint-config-prettier eslint-plugin-prettier
-```
-
-prettier: Prettier 是一个代码格式化工具，用于自动格式化代码以符合统一的风格。
-
-eslint-config-prettier: 这是一个 ESLint 配置，用于禁用 ESLint 中与 Prettier 冲突的格式化规则，以确保 Prettier 和 ESLint 协同工作。
-
-eslint-plugin-prettier: 这是一个 ESLint 插件，用于在 ESLint 中运行 Prettier，并将 Prettier 的格式化结果作为 ESLint 的一部分输出。
-
-在项目根目录新建 .prettierrc.js 文件，并添加以下内容
+通过配置 module.rules 来实现
 
 ```js
-module.exports = {
-  // 一行的字符数，如果超过会进行换行，默认为 80
-  printWidth: 120,
-  // 一个 tab 代表几个空格数，默认为 2
-  tabWidth: 2,
-  // 是否使用 tab 进行缩进，默认为 false，表示用空格进行缩减
-  useTabs: false,
-  // 行尾是否需要分号，默认为 true
-  semi: true,
-  // 是否使用单引号，默认为 false，使用双引号
-  singleQuote: true,
-  // jsx 是否使用单引号，默认为 false，使用双引号
-  jsxSingleQuote: true,
-  // 末尾是否需要逗号，有三个可选值 "<none|es5|all>"
-  // "<none>" 代表不需要逗号
-  // "<es5>" 代表ES5中需要逗号
-  // "<all>" 代表所有对象最后一个属性添加逗号
-  trailingComma: 'all',
-  // 对象大括号直接是否有空格，默认为 true，效果：{ foo: bar }
-  bracketSpacing: true,
-  // 箭头函数，只有一个参数的时候，是否需要括号，默认为 avoid，有两个可选值 "avoid" 和 "always"
-  arrowParens: 'avoid',
-};
-```
-
-在 .eslintrc.js 文件中 extends 添加 `plugin:prettier/recommended`
-
-```js
-"extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:react/recommended",
-    "plugin:prettier/recommended"
-],
-```
-
-在 .eslintrc.js 文件中 plugins 添加 `prettier`
-
-```js
-"plugins": [
-    "@typescript-eslint",
-    "react",
-    "prettier"
-],
-```
-
-格式化当前目录下所有文件
-
-```
-npx prettier . --write
-pnpm exec prettier . --write
-```
-
-#### 更新 .eslintrc.js 配置
-
-```js
-module.exports = {
-  // 定义环境
-  env: { browser: true, es2021: true, node: true },
-
-  // 指定解析器
-  parser: '@typescript-eslint/parser',
-
-  // 扩展规则
-  extends: [
-    'eslint:recommended', // 使用 ESLint 推荐的规则
-    'plugin:@typescript-eslint/recommended', // 使用 @typescript-eslint 推荐的规则
-    'plugin:react/recommended', // 使用 React 推荐的规则
-    'plugin:prettier/recommended', // 启用 Prettier 与 ESLint 的集成
-  ],
-
-  // 解析器选项
-  parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-
-  // 插件
-  plugins: ['@typescript-eslint', 'react', 'prettier'],
-
-  // 设置
-  settings: { react: { version: 'detect' } },
-
-  // 规则配置
-  rules: {
-    // TypeScript 相关规则
-    '@typescript-eslint/no-explicit-any': 'error', // 禁止使用 any 类型
-    '@typescript-eslint/no-unused-vars': 'warn', // 禁止未使用的变量
-    '@typescript-eslint/explicit-function-return-type': 'off', // 关闭函数返回类型的显式声明
-    '@typescript-eslint/no-empty-function': 'error', // 禁止空函数
-    '@typescript-eslint/no-non-null-assertion': 'error', // 禁止使用非空断言
-    '@typescript-eslint/no-var-requires': 'off', // 关闭禁止使用 require 语句的检查
-
-    // React 相关规则
-    'react/prop-types': 'off', // 关闭 Prop-types 的检查
-    'react/display-name': 'off', // 关闭组件 display name 的检查
-    'react/no-unescaped-entities': 'error', // 禁止在字符串和注释中使用未转义的特殊字符
-    'react/jsx-uses-react': 'off', // 关闭检查 JSX 中是否导入了 React
-    'react/jsx-uses-vars': 'error', // 检查是否使用了 JSX 变量
-    'react/react-in-jsx-scope': 'off', // 关闭检查 JSX 中是否导入了 React（通常由 Babel 处理，因此在 TypeScript 中可以关闭）
-
-    // 其他规则
-    'no-console': 'warn', // 警告不允许使用 console
-    'no-unused-vars': 'warn', // 警告未使用的变量
-    'no-undef': 'error', // 禁止使用未声明的变量
-    'prettier/prettier': 'error', // 强制执行 Prettier 格式化规则
-  },
-
-  // 忽略指定文件或目录
-  ignorePatterns: ['/node_modules/**', '/build/**'],
-
-  // 覆盖配置
-  overrides: [
-    {
-      files: ['src/**/*.ts', 'src/**/*.tsx'],
-      excludedFiles: 'node_modules/**',
-      rules: {
-        // 在这里添加只对 src 文件夹生效的规则
-      },
-    },
-  ],
-};
-```
-
-在 VSCode 中可以配置自动修复 ESLint 错误，项目根目录新建 .vscode 文件夹，创建 settings.json 文件，添加以下内容
-
-```json
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
-    "source.fixAll.eslint": "explicit",
-    "eslint.autoFixOnSave": "explicit"
-  }
-}
-```
-
-### Husky
-
-```
-pnpm i husky
-
-pnpm exec husky init
-```
-
-安装 husky 后，执行 `pnpm exec husky init` 命令，之后会在根目录生成 .husky 文件，并更新 package.json 文件
-
-```json
-"scripts": {
-  "prepare": "husky"
-},
-```
-
-### Lint-Staged
-
-```
-npm i lint-staged
-```
-
-使用预提交钩子检查暂存文件，并将以下代码更新到 .husky/pre-commit 文件中
-
-```
-npx lint-staged
-```
-
-在 package.json 文件中添加以下 lint-staged 配置
-
-```json
-"lint-staged": {
-  "*.{js,jsx,ts,tsx,json}": [
-    "eslint --fix"
-  ],
-  "*.{js,jsx,ts,tsx,json,css,scss,less,md}": [
-    "prettier --write"
+  test: /\.ts$/,
+  use: [
+    'thread-loader',
+    'ts-loader'
   ]
 },
 ```
 
-### Commitlint
-
-```
-pnpm i @commitlint/{config-conventional,cli}
-```
-
-在项目根目录下创建 commitlint.config.js 文件，并添加以下内容
+为了防止启动工作进程时出现高延迟，thread-loader 提供了 warmup 方法，用于预热 worker 池，以减少启动 worker 的延迟时间。预热 worker 池可以通过加载指定的模块到 Node.js 模块缓存中来实现。
 
 ```js
+const threadLoader = require('thread-loader');
+
+// 定义worker池的配置
+const threadLoaderOptions = {
+  workers: 2, // 工作线程数
+  workerParallelJobs: 50, // 每个工作线程处理的作业数
+  poolRespawn: false, // 是否重新生成工作线程池
+  poolTimeout: 2000, // 空闲工作线程被杀死的超时时间
+  poolParallelJobs: 50, // 工作线程分配的作业数
+  name: 'my-pool', // 工作线程池的名称
+};
+
+// 预热worker池，加载指定的模块到Node.js模块缓存中
+threadLoader.warmup(threadLoaderOptions, [
+  'babel-loader', // 加载babel-loader模块到Node.js模块缓存中
+  'sass-loader', // 加载sass-loader模块到Node.js模块缓存中
+  // 可以根据需要加载其他模块
+]);
+```
+
+terser-webpack-plugin 插件用于压缩 JavaScript 文件，已默认开启**并行压缩**，开发者也可以通过 parallel 参数设置具体的并发进程数量
+
+```js
+const TerserPlugin = require('terser-webpack-plugin');
+
 module.exports = {
-  extends: ['@commitlint/config-conventional'],
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        // 默认值为 `require('os').cpus().length - 1`
+        parallel: 2, // number | boolean
+      }),
+    ],
+  },
 };
 ```
 
-将以下代码更新到 .husky/commit-msg 文件
+### 约束 Loader 执行范围
 
+开发时我们需要使用第三方的库或插件，所有文件都下载到 node_modules 中了。而这些文件是不需要编译可以直接使用的。
+
+所以我们在对 js 文件处理时，要排除 node_modules 下面的文件。
+
+include 包含，只处理 xxx 文件
+
+exclude 排除，除了 xxx 文件以外其他文件都处理
+
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
+        test: /\.(ts|js)x?$/,
+        // 排除 node_modules 目录下的文件
+        // include: path.resolve(__dirname, "../src"), // 也可以用包含
+        exclude: /node_modules/,
+        // 使用 ts-loader 进行处理
+        use: 'ts-loader',
+      },
+    ],
+  },
+};
 ```
-npx --no-install commitlint --edit "$1"
+
+### 使用 noParse 跳过文件编译
+
+noParse: 这个选项用于告诉 Webpack，某些模块不需要进行解析。这对于一些大型的第三方库或者已经编译过的模块来说是很有用的，因为这些模块本身已经是完整的，不需要再被 Webpack 处理。
+
+```js
+module.exports = {
+  //...
+  module: {
+    noParse: /lodash|jquery/,
+  },
+};
 ```
 
-到此，我们就完成代码规范的基本配置，以下是代码提交格式
+### 设置 resolve 缩小搜索范
 
+类似于 Node 模块搜索逻辑，当 Webpack 遇到 import 'lodash' 这样的 npm 包导入语句时，会先尝试在当前项目 node_modules 目录搜索资源，如果找不到，则按目录层级尝试逐级向上查找 node_modules 目录，如果依然找不到，则最终尝试在全局 node_modules 中搜索。
+
+减少模块搜索范围: 通过指定 modules 选项，可以告诉 Webpack 只在指定的目录中搜索模块，而不是遍历整个 node_modules 目录。这样可以加快模块的查找速度。
+
+```js
+resolve: {
+  modules: [path.resolve(__dirname, 'src'), 'node_modules'],
+}
 ```
-[
-  'build',     // 对项目构建或外部依赖项的更改
-  'chore',     // 对构建过程或辅助工具的更改
-  'ci',        // 对持续集成 (CI) 配置文件和脚本的更改
-  'docs',      // 对文档的更改
-  'feat',      // 添加新功能
-  'fix',       // 修复 bug
-  'perf',      // 对性能的改进
-  'refactor',  // 对代码重构的更改
-  'revert',    // 撤销之前的提交
-  'style',     // 对代码风格、格式的更改，不影响代码逻辑
-  'test'       // 添加或修改测试代码
-];
 
-echo "foo: some message" # fails
-echo "fix: some message" # passes
+Webpack 会遍历 resolve.extensions 项定义的后缀名列表，尝试在文件路径追加后缀名，搜索对应物理文件。
 
-echo "fix(SCOPE): Some message" # fails
-echo "fix(SCOPE): Some Message" # fails
-echo "fix(SCOPE): SomeMessage" # fails
-echo "fix(SCOPE): SOMEMESSAGE" # fails
-echo "fix(scope): some message" # passes
-echo "fix(scope): some Message" # passes
+```js
+resolve: {
+  // 自动补全文件扩展名
+  extensions: ['.tsx', '.ts', '.js', '.jsx'],
+},
+```
+
+这意味着 Webpack 在针对不带后缀名的引入语句时，可能需要执行四次判断逻辑才能完成文件搜索，针对这种情况，可行的优化措施包括：
+
+- 修改 resolve.extensions 配置项，减少匹配次数；
+
+- 代码中尽量补齐文件后缀名；
+
+- 设置 resolve.enforceExtension = true ，强制要求开发者提供明确的模块后缀名，不过这种做法侵入性太强，不太推荐
+
+### 跳过 TS 类型检查
+
+类型检查涉及 AST 解析、遍历以及其它非常消耗 CPU 的操作，会给工程化流程带来比较大的性能负担，因此我们可以选择关闭 ts-loader 的类型检查功能：
+
+```js
+module.exports = {
+  // ...
+  module: {
+    rules: [
+      {
+        test: /\.(ts|js)x?$/,
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              // 设置为“仅编译”，关闭类型检查
+              transpileOnly: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
+```
+
+可以借助编辑器的 TypeScript 插件实现代码检查；
+
+使用 `fork-ts-checker-webpack-plugin` 插件将类型检查能力剥离到 子进程 执行，例如：
+
+```js
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+
+module.exports = {
+  // ...
+  module: {
+    rules: [
+      {
+        test: /\.(ts|js)x?$/,
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
+  plugins: [
+    // fork 出子进程，专门用于执行类型检查
+    new ForkTsCheckerWebpackPlugin(),
+  ],
+};
 ```
