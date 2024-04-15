@@ -64,103 +64,107 @@ module.exports = {
     // 定义规则数组
     rules: [
       {
-        // 用来匹配 .css 结尾的文件
-        test: /\.css$/,
-        // use 数组里面 Loader 执行顺序是从右到左
-        use: getStyleLoaders(), // 使用 getStyleLoaders 函数获取样式加载器配置
-      },
-      {
-        // 匹配 .less 结尾的文件
-        test: /\.less$/,
-        // 使用 less-loader 处理 Less 文件
-        use: getStyleLoaders('less-loader'),
-      },
-      {
-        // 匹配 .sass 或 .scss 结尾的文件
-        test: /\.s(a|c)ss$/,
-        // 使用 sass-loader 处理 Sass/SCSS 文件
-        use: getStyleLoaders('sass-loader'),
-      },
-      {
-        // 匹配 .styl 结尾的文件
-        test: /\.styl$/,
-        // 使用 stylus-loader 处理 Stylus 文件
-        use: getStyleLoaders('stylus-loader'),
-      },
-      {
-        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
-        test: /\.(ts|js)x?$/,
-        // 排除 node_modules 目录下的文件
-        // include: path.resolve(__dirname, "../src"), // 也可以用包含
-        exclude: /node_modules/,
-        // 使用 ts-loader 进行处理
-        use: [
+        oneOf: [
           {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: true,
+            // 用来匹配 .css 结尾的文件
+            test: /\.css$/,
+            // use 数组里面 Loader 执行顺序是从右到左
+            use: getStyleLoaders(), // 使用 getStyleLoaders 函数获取样式加载器配置
+          },
+          {
+            // 匹配 .less 结尾的文件
+            test: /\.less$/,
+            // 使用 less-loader 处理 Less 文件
+            use: getStyleLoaders('less-loader'),
+          },
+          {
+            // 匹配 .sass 或 .scss 结尾的文件
+            test: /\.s(a|c)ss$/,
+            // 使用 sass-loader 处理 Sass/SCSS 文件
+            use: getStyleLoaders('sass-loader'),
+          },
+          {
+            // 匹配 .styl 结尾的文件
+            test: /\.styl$/,
+            // 使用 stylus-loader 处理 Stylus 文件
+            use: getStyleLoaders('stylus-loader'),
+          },
+          {
+            // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
+            test: /\.(ts|js)x?$/,
+            // 排除 node_modules 目录下的文件
+            // include: path.resolve(__dirname, "../src"), // 也可以用包含
+            exclude: /node_modules/,
+            // 使用 ts-loader 进行处理
+            use: [
+              {
+                loader: 'ts-loader',
+                options: {
+                  transpileOnly: true,
+                },
+              },
+            ],
+          },
+          {
+            // 检查文件是否为图片类型（png、jpeg、jpg、gif、webp、svg）
+            test: /\.(png|jpe?g|gif|webp|svg)$/,
+            // 使用 "asset" 类型处理图片文件
+            type: 'asset',
+            parser: {
+              // 将图片转换为 Data URL 的条件设置
+              dataUrlCondition: {
+                // 设置最大大小为 16KB，小于16kb的图片会被base64处理
+                maxSize: 16 * 1024,
+              },
+            },
+            generator: {
+              // 输出文件的路径和名称设置
+              // 格式：static/imgs/文件名.[8位哈希值][文件扩展名][查询参数]
+              filename: 'static/imgs/[name].[hash:8][ext][query]',
+            },
+            // 使用 image-webpack-loader 处理图片
+            use: [
+              {
+                loader: 'image-webpack-loader',
+                options: {
+                  // 是否禁用图片压缩处理，非生产环境下禁用
+                  disable: !isProduction,
+                  // mozjpeg 压缩选项
+                  mozjpeg: {
+                    progressive: true, // 使用渐进式压缩
+                  },
+                  // optipng 压缩选项
+                  optipng: {
+                    enabled: false, // 禁用 optipng 压缩
+                  },
+                  // pngquant 压缩选项
+                  pngquant: {
+                    quality: [0.65, 0.9], // 压缩质量范围
+                    speed: 4, // 压缩速度
+                  },
+                  // gifsicle 压缩选项
+                  gifsicle: {
+                    interlaced: false, // 不使用隔行扫描
+                  },
+                  // webp 压缩选项
+                  webp: {
+                    quality: 75, // webp 图片质量
+                  },
+                },
+              },
+            ],
+          },
+          {
+            // 匹配字体文件（ttf、woff、woff2）和视频文件（avi）的正则表达式
+            test: /\.(ttf|woff2?|map4|map3|avi)$/,
+            // 指定模块的类型为 'asset/resource'，表示将资源作为单独的文件输出，并导出 URL
+            type: 'asset/resource',
+            // 生成器配置，用于指定输出文件的名称和路径
+            generator: {
+              filename: 'static/media/[name].[hash:8][ext][query]',
             },
           },
         ],
-      },
-      {
-        // 检查文件是否为图片类型（png、jpeg、jpg、gif、webp、svg）
-        test: /\.(png|jpe?g|gif|webp|svg)$/,
-        // 使用 "asset" 类型处理图片文件
-        type: 'asset',
-        parser: {
-          // 将图片转换为 Data URL 的条件设置
-          dataUrlCondition: {
-            // 设置最大大小为 16KB，小于16kb的图片会被base64处理
-            maxSize: 16 * 1024,
-          },
-        },
-        generator: {
-          // 输出文件的路径和名称设置
-          // 格式：static/imgs/文件名.[8位哈希值][文件扩展名][查询参数]
-          filename: 'static/imgs/[name].[hash:8][ext][query]',
-        },
-        // 使用 image-webpack-loader 处理图片
-        use: [
-          {
-            loader: 'image-webpack-loader',
-            options: {
-              // 是否禁用图片压缩处理，非生产环境下禁用
-              disable: !isProduction,
-              // mozjpeg 压缩选项
-              mozjpeg: {
-                progressive: true, // 使用渐进式压缩
-              },
-              // optipng 压缩选项
-              optipng: {
-                enabled: false, // 禁用 optipng 压缩
-              },
-              // pngquant 压缩选项
-              pngquant: {
-                quality: [0.65, 0.9], // 压缩质量范围
-                speed: 4, // 压缩速度
-              },
-              // gifsicle 压缩选项
-              gifsicle: {
-                interlaced: false, // 不使用隔行扫描
-              },
-              // webp 压缩选项
-              webp: {
-                quality: 75, // webp 图片质量
-              },
-            },
-          },
-        ],
-      },
-      {
-        // 匹配字体文件（ttf、woff、woff2）和视频文件（avi）的正则表达式
-        test: /\.(ttf|woff2?|map4|map3|avi)$/,
-        // 指定模块的类型为 'asset/resource'，表示将资源作为单独的文件输出，并导出 URL
-        type: 'asset/resource',
-        // 生成器配置，用于指定输出文件的名称和路径
-        generator: {
-          filename: 'static/media/[name].[hash:8][ext][query]',
-        },
       },
     ],
   },

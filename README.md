@@ -4,6 +4,37 @@
 
 随着项目复杂度的增加，Webpack的构建时间可能会显著增加，为了提高开发效率和用户体验，优化Webpack的构建速度和性能成为至关重要的任务。
 
+### oneOf
+
+oneOf 配置项可以在匹配到第一个 loader 时停止匹配后续的 loader，从而提升打包速度。这可以减少不必要的 loader 匹配和处理，从而加快打包速度。
+
+```js
+module.exports = {
+  //...
+  module: {
+    rules: [
+      {
+        oneOf: [
+          {
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader'],
+          },
+          {
+            test: /\.png$/,
+            use: 'url-loader',
+          },
+          // 其他规则...
+        ],
+      },
+    ],
+  },
+};
+```
+
+当匹配到 .css 文件时，只会使用 style-loader 和 css-loader ，而不会继续匹配后续的规则。这样可以提升打包速度，特别是在处理大量文件时。
+
+总的来说，使用 oneOf 配置项可以帮助优化 Webpack 的打包速度，特别是在处理多种文件类型和 loader 时。
+
 ### cache 缓存
 
 Webpack 的缓存机制是指在构建过程中对已经构建过的模块进行缓存，以便在下一次构建时能够复用这些模块。
