@@ -8,7 +8,11 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerWebpackPlugin = require('css-minimizer-webpack-plugin');
 // 引入 TerserWebpackPlugin 插件，用于压缩 JavaScript 文件
 const TerserWebpackPlugin = require('terser-webpack-plugin');
+// 导入ForkTsCheckerWebpackPlugin插件，用于并行运行TypeScript类型检查
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+// 导入ImageMinimizerPlugin插件，用于优化图像
+const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
+
 // 判断当前环境是否为生产环境
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -122,37 +126,6 @@ module.exports = {
               // 格式：static/imgs/文件名.[8位哈希值][文件扩展名][查询参数]
               filename: 'static/imgs/[name].[hash:8][ext][query]',
             },
-            // 使用 image-webpack-loader 处理图片
-            use: [
-              {
-                loader: 'image-webpack-loader',
-                options: {
-                  // 是否禁用图片压缩处理，非生产环境下禁用
-                  disable: !isProduction,
-                  // mozjpeg 压缩选项
-                  mozjpeg: {
-                    progressive: true, // 使用渐进式压缩
-                  },
-                  // optipng 压缩选项
-                  optipng: {
-                    enabled: false, // 禁用 optipng 压缩
-                  },
-                  // pngquant 压缩选项
-                  pngquant: {
-                    quality: [0.65, 0.9], // 压缩质量范围
-                    speed: 4, // 压缩速度
-                  },
-                  // gifsicle 压缩选项
-                  gifsicle: {
-                    interlaced: false, // 不使用隔行扫描
-                  },
-                  // webp 压缩选项
-                  webp: {
-                    quality: 75, // webp 图片质量
-                  },
-                },
-              },
-            ],
           },
           {
             // 匹配字体文件（ttf、woff、woff2）和视频文件（avi）的正则表达式
@@ -193,8 +166,48 @@ module.exports = {
       // 使用 CssMinimizerWebpackPlugin 插件来压缩 CSS 文件
       new CssMinimizerWebpackPlugin(),
       // 使用 TerserWebpackPlugin 插件来压缩 JavaScript 文件
-      new TerserWebpackPlugin(),
+      new TerserWebpackPlugin({
+        // 默认值为 `require('os').cpus().length - 1`
+        parallel: 2, // number | boolean
+      }),
+      // 使用 ImageMinimizerPlugin 插件来压缩图片
+      new ImageMinimizerPlugin({
+        minimizer: {
+          implementation: ImageMinimizerPlugin.imageminMinify,
+          options: {
+            // Lossless optimization with custom option
+            // Feel free to experiment with options for better result for you
+            plugins: [
+              ['gifsicle', { interlaced: true }],
+              ['jpegtran', { progressive: true }],
+              ['optipng', { optimizationLevel: 5 }],
+              // Svgo configuration here https://github.com/svg/svgo#configuration
+              [
+                'svgo',
+                {
+                  plugins: [
+                    {
+                      name: 'preset-default',
+                      params: {
+                        overrides: {
+                          removeViewBox: false,
+                          addAttributesToSVGElement: {
+                            params: {
+                              attributes: [{ xmlns: 'http://www.w3.org/2000/svg' }],
+                            },
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            ],
+          },
+        },
+      }),
     ],
+    usedExports: true, // Tree Shaking 分析代码，消除无用代码
   },
 
   cache: {

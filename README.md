@@ -1,122 +1,29 @@
-# Webpack 提升打包构建速度
+# Webpack 减少代码体积
 
 ## 前言
 
-随着项目复杂度的增加，Webpack的构建时间可能会显著增加，为了提高开发效率和用户体验，优化Webpack的构建速度和性能成为至关重要的任务。
+随着项目复杂度的增加，Webpack 的构建时间可能会显著增加，为了提高开发效率和用户体验，优化 Webpack 的构建速度和性能成为至关重要的任务。
 
-### oneOf
+### 压缩代码
 
-oneOf 配置项可以在匹配到第一个 loader 时停止匹配后续的 loader，从而提升打包速度。这可以减少不必要的 loader 匹配和处理，从而加快打包速度。
+#### 压缩 Js
 
-```js
-module.exports = {
-  //...
-  module: {
-    rules: [
-      {
-        oneOf: [
-          {
-            test: /\.css$/,
-            use: ['style-loader', 'css-loader'],
-          },
-          {
-            test: /\.png$/,
-            use: 'url-loader',
-          },
-          // 其他规则...
-        ],
-      },
-    ],
-  },
-};
-```
+Terser 是目前最流行的 ES6 代码压缩工具之一，它支持一系列代码压缩功能，如 DCE（Dead-code elimination 死代码消除）、删除注释、删除空格、代码合并和变量名简化等。
 
-当匹配到 .css 文件时，只会使用 style-loader 和 css-loader ，而不会继续匹配后续的规则。这样可以提升打包速度，特别是在处理大量文件时。
-
-总的来说，使用 oneOf 配置项可以帮助优化 Webpack 的打包速度，特别是在处理多种文件类型和 loader 时。
-
-### cache 缓存
-
-Webpack 的缓存机制是指在构建过程中对已经构建过的模块进行缓存，以便在下一次构建时能够复用这些模块。
-
-Webpack5 会将首次构建出的 Module、Chunk、ModuleGraph 等对象序列化后保存到硬盘中，后面再运行的时候，就可以跳过许多耗时的编译动作，直接复用缓存数据。从而显著提高Webpack的构建速度，特别是在大型项目中。
-
-仅仅需要在 Webpack5 中设置 `cache.type = 'filesystem'` 即可开启
+从 Webpack 5.0 开始，默认使用 Terser 作为 JavaScript 代码压缩器，不需要安装，开箱即用。通过设置 optimization.minimize 选项为 true 即可启用压缩功能：
 
 ```js
 module.exports = {
   //...
-  cache: {
-    type: 'filesystem',
+  optimization: {
+    minimize: true,
   },
-  //...
 };
 ```
 
-[但是在 webpack 中默认情况下不启用持久缓存](https://github.com/webpack/changelog-v5/blob/master/guides/persistent-caching.md)
+使用 `mode = 'production'`，生产模式构建时，默认开启 Terser 压缩。
 
-webpack also needs to invalidate cache entries:
-
-when you npm upgrade a loader or plugin
-
-when you change your configuration
-
-when you change a file that is being read in the configuration
-
-when you npm upgrade a dependency that is used in the configuration
-
-when you pass different command-line arguments to your build script
-
-when you have a custom build script and change that
-
-webpack 无法在开箱后处理所有这些情况。这就是为什么 webpack 选择了安全的方式，将持久缓存作为一项选择性功能。
-
-### thread-loader 多进程打包
-
-```
-pnpm i thread-loader
-```
-
-thread-loader 可以通过将工作任务分配给多个工作线程来提高构建性能
-
-**需要注意**，每个 worker 都是一个单独的 node.js 进程，其开销约为600毫秒，还有进程间通信的开销。所以仅在特别耗时的操作中使用，**特别适用于耗时的 loader 操作**。
-
-通过配置 module.rules 来实现
-
-```js
-{
-  test: /\.ts$/,
-  use: [
-    'thread-loader',
-    'ts-loader'
-  ]
-},
-```
-
-为了防止启动工作进程时出现高延迟，thread-loader 提供了 warmup 方法，用于预热 worker 池，以减少启动 worker 的延迟时间。预热 worker 池可以通过加载指定的模块到 Node.js 模块缓存中来实现。
-
-```js
-const threadLoader = require('thread-loader');
-
-// 定义worker池的配置
-const threadLoaderOptions = {
-  workers: 2, // 工作线程数
-  workerParallelJobs: 50, // 每个工作线程处理的作业数
-  poolRespawn: false, // 是否重新生成工作线程池
-  poolTimeout: 2000, // 空闲工作线程被杀死的超时时间
-  poolParallelJobs: 50, // 工作线程分配的作业数
-  name: 'my-pool', // 工作线程池的名称
-};
-
-// 预热worker池，加载指定的模块到Node.js模块缓存中
-threadLoader.warmup(threadLoaderOptions, [
-  'babel-loader', // 加载babel-loader模块到Node.js模块缓存中
-  'sass-loader', // 加载sass-loader模块到Node.js模块缓存中
-  // 可以根据需要加载其他模块
-]);
-```
-
-terser-webpack-plugin 插件用于压缩 JavaScript 文件，已默认开启**并行压缩**，开发者也可以通过 parallel 参数设置具体的并发进程数量
+也可以手动创建 [terser-webpack-plugin](https://www.npmjs.com/package/terser-webpack-plugin#options) 实例并传入压缩配置实现更精细的压缩功能
 
 ```js
 const TerserPlugin = require('terser-webpack-plugin');
@@ -128,135 +35,141 @@ module.exports = {
       new TerserPlugin({
         // 默认值为 `require('os').cpus().length - 1`
         parallel: 2, // number | boolean
+        // ...
       }),
     ],
   },
 };
 ```
 
-### 约束 Loader 执行范围
+#### 压缩 Css
 
-开发时我们需要使用第三方的库或插件，所有文件都下载到 node_modules 中了。而这些文件是不需要编译可以直接使用的。
-
-所以我们在对 js 文件处理时，要排除 node_modules 下面的文件。
-
-include 包含，只处理 xxx 文件
-
-exclude 排除，除了 xxx 文件以外其他文件都处理
+使用 [css-minimizer-webpack-plugin](https://webpack.js.org/plugins/css-minimizer-webpack-plugin/) 插件对 css 压缩
 
 ```js
+const CssMinimizerWebpackPlugin = require('css-minimizer-webpack-plugin');
+
 module.exports = {
-  module: {
-    rules: [
-      {
-        // 正则表达式匹配文件路径，以 .js、.jsx、.ts、.tsx 结尾的文件
-        test: /\.(ts|js)x?$/,
-        // 排除 node_modules 目录下的文件
-        // include: path.resolve(__dirname, "../src"), // 也可以用包含
-        exclude: /node_modules/,
-        // 使用 ts-loader 进行处理
-        use: 'ts-loader',
-      },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      // 使用 CssMinimizerWebpackPlugin 插件来压缩 CSS 文件
+      new CssMinimizerWebpackPlugin(),
     ],
   },
 };
 ```
 
-### 使用 noParse 跳过文件编译
+#### 压缩 Html
 
-noParse: 这个选项用于告诉 Webpack，某些模块不需要进行解析。这对于一些大型的第三方库或者已经编译过的模块来说是很有用的，因为这些模块本身已经是完整的，不需要再被 Webpack 处理。
+使用 `mode = 'production'`，生产模式构建时，默认开启 Html 压缩。
+
+#### 压缩图片
+
+社区中有很多处理图片的插件，比如 `image-webpack-loader`、[image-minimizer-webpack-plugin](https://github.com/webpack-contrib/image-minimizer-webpack-plugin/)
+
+```
+pnpm install image-minimizer-webpack-plugin imagemin --save-dev
+
+无损压缩
+pnpm install imagemin-gifsicle imagemin-jpegtran imagemin-optipng imagemin-svgo --save-dev
+```
 
 ```js
+const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.(jpe?g|png|gif|svg)$/i,
+        type: 'asset',
+      },
+    ],
+  },
+  optimization: {
+    minimizer: [
+      '...',
+      new ImageMinimizerPlugin({
+        minimizer: {
+          implementation: ImageMinimizerPlugin.imageminMinify,
+          options: {
+            // Lossless optimization with custom option
+            // Feel free to experiment with options for better result for you
+            plugins: [
+              ['gifsicle', { interlaced: true }],
+              ['jpegtran', { progressive: true }],
+              ['optipng', { optimizationLevel: 5 }],
+              // Svgo configuration here https://github.com/svg/svgo#configuration
+              [
+                'svgo',
+                {
+                  plugins: [
+                    {
+                      name: 'preset-default',
+                      params: {
+                        overrides: {
+                          removeViewBox: false,
+                          addAttributesToSVGElement: {
+                            params: {
+                              attributes: [{ xmlns: 'http://www.w3.org/2000/svg' }],
+                            },
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            ],
+          },
+        },
+      }),
+    ],
+  },
+};
+```
+
+### Tree-shaking 删除无用模块导出
+
+Tree Shaking 是指通过静态分析代码的方式，识别和移除未被使用的代码，以减少最终打包文件的大小。它通常与 ES6 模块系统（例如 import 和 export 语句）一起使用。
+
+在 Webpack 中，启动 Tree Shaking 功能必须同时满足以下：
+
+- 使用 ESM 规范编写模块代码；
+
+- Webpack 已经默认开启了这个功能，或者配置 optimization.usedExports 为 true，启动标记功能；
+
+- 启动代码优化功能，可以通过如下方式实现：
+
+  配置 mode = production；
+
+  配置 optimization.minimize = true；
+
+  提供 optimization.minimizer 数组。
+
+Webpack 中，Tree-shaking 的实现：
+
+- 一是需要先 「标记」 出模块导出值中哪些没有被用过
+
+  标记功能需要配置 `optimization.usedExports = true` 开启；
+
+- 二是使用代码压缩插件 —— 如 Terser 删掉这些没被用到的导出变量。
+
+```js
+const TerserWebpackPlugin = require('terser-webpack-plugin');
+
 module.exports = {
   //...
-  module: {
-    noParse: /lodash|jquery/,
-  },
-};
-```
-
-### 设置 resolve 缩小搜索范
-
-类似于 Node 模块搜索逻辑，当 Webpack 遇到 import 'lodash' 这样的 npm 包导入语句时，会先尝试在当前项目 node_modules 目录搜索资源，如果找不到，则按目录层级尝试逐级向上查找 node_modules 目录，如果依然找不到，则最终尝试在全局 node_modules 中搜索。
-
-减少模块搜索范围: 通过指定 modules 选项，可以告诉 Webpack 只在指定的目录中搜索模块，而不是遍历整个 node_modules 目录。这样可以加快模块的查找速度。
-
-```js
-resolve: {
-  modules: [path.resolve(__dirname, 'src'), 'node_modules'],
-}
-```
-
-Webpack 会遍历 resolve.extensions 项定义的后缀名列表，尝试在文件路径追加后缀名，搜索对应物理文件。
-
-```js
-resolve: {
-  // 自动补全文件扩展名
-  extensions: ['.tsx', '.ts', '.js', '.jsx'],
-},
-```
-
-这意味着 Webpack 在针对不带后缀名的引入语句时，可能需要执行四次判断逻辑才能完成文件搜索，针对这种情况，可行的优化措施包括：
-
-- 修改 resolve.extensions 配置项，减少匹配次数；
-
-- 代码中尽量补齐文件后缀名；
-
-- 设置 resolve.enforceExtension = true ，强制要求开发者提供明确的模块后缀名，不过这种做法侵入性太强，不太推荐
-
-### 跳过 TS 类型检查
-
-类型检查涉及 AST 解析、遍历以及其它非常消耗 CPU 的操作，会给工程化流程带来比较大的性能负担，因此我们可以选择关闭 ts-loader 的类型检查功能：
-
-```js
-module.exports = {
-  // ...
-  module: {
-    rules: [
-      {
-        test: /\.(ts|js)x?$/,
-        use: [
-          {
-            loader: 'ts-loader',
-            options: {
-              // 设置为“仅编译”，关闭类型检查
-              transpileOnly: true,
-            },
-          },
-        ],
-      },
+  optimization: {
+    minimize: true
+    minimizer: [
+      new TerserWebpackPlugin({
+        // 默认值为 `require('os').cpus().length - 1`
+        parallel: 2, // number | boolean
+      }),
     ],
-  },
-};
-```
-
-可以借助编辑器的 TypeScript 插件实现代码检查；
-
-使用 `fork-ts-checker-webpack-plugin` 插件将类型检查能力剥离到 子进程 执行，例如：
-
-```js
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
-
-module.exports = {
-  // ...
-  module: {
-    rules: [
-      {
-        test: /\.(ts|js)x?$/,
-        use: [
-          {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: true,
-            },
-          },
-        ],
-      },
-    ],
-  },
-  plugins: [
-    // fork 出子进程，专门用于执行类型检查
-    new ForkTsCheckerWebpackPlugin(),
-  ],
+    usedExports: true,
+  }
 };
 ```
