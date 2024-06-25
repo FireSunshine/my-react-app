@@ -8,7 +8,9 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerWebpackPlugin = require('css-minimizer-webpack-plugin');
 // 引入 TerserWebpackPlugin 插件，用于压缩 JavaScript 文件
 const TerserWebpackPlugin = require('terser-webpack-plugin');
+// 导入ForkTsCheckerWebpackPlugin插件，用于并行运行TypeScript类型检查
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+
 // 判断当前环境是否为生产环境
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -50,12 +52,18 @@ module.exports = {
 
   /* 输出文件 */
   output: {
+    // 定义 JS 文件的输出路径和名称模板
+    filename: isProduction ? 'static/js/[name].[contenthash:10].js' : 'static/js/[name].js',
+    // 定义 chunk js 文件的输出路径和名称模板
+    chunkFilename: isProduction ? 'static/js/[name].[contenthash:10].chunk.js' : 'static/js/[name].chunk.js',
     // 指定输出路径为当前目录下的 build 目录
     path: isProduction ? path.resolve(__dirname, 'build') : undefined,
     // 定义 asset 文件的输出路径和名称模板
     assetModuleFilename: 'static/media/[name].[hash:8][ext][query]',
     // 是否在每次构建前清理输出目录
     clean: true,
+    // 设置所有资源的基础路径，如：'https://cdn.example.com/'
+    // publicPath: 'https://cdn.example.com/',
   },
 
   /* 模块配置，定义对不同类型文件的处理规则 */
@@ -188,13 +196,48 @@ module.exports = {
 
   /* 优化配置，用于控制 webpack 打包输出的优化行为 */
   optimization: {
+    // 用于控制生成块（chunk）的 ID 的方式
+    chunkIds: isProduction ? 'deterministic' : 'named',
+    // 提取runtime文件, 将 hash 值单独保管在一个 runtime 文件中
+    runtimeChunk: {
+      // 将模块加载和解析的逻辑提取到名为 runtime~entrypoint-name 的文件中，例如 runtime~main.js
+      name: entrypoint => `runtime~${entrypoint.name}.js`,
+    },
+    splitChunks: {
+      chunks: 'all', // 选择哪些块进行优化。值可以是 'all', 'async', 和 'initial'
+      cacheGroups: {
+        // react react-dom react-router-dom 一起打包成一个js文件
+        react: {
+          test: /[\\/]node_modules[\\/]react(.*)?[\\/]/,
+          name: 'chunk-react',
+          priority: 40, // 权重 优先级
+        },
+        // antd 单独打包
+        antd: {
+          test: /[\\/]node_modules[\\/]antd[\\/]/,
+          name: 'chunk-antd',
+          priority: 30,
+        },
+        // 剩下的node_modules单独打包
+        libs: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'chunk-libs',
+          priority: 20,
+        },
+      },
+    },
     minimize: isProduction, // 是否进行代码压缩，取决于是否为生产环境
     minimizer: [
       // 使用 CssMinimizerWebpackPlugin 插件来压缩 CSS 文件
       new CssMinimizerWebpackPlugin(),
       // 使用 TerserWebpackPlugin 插件来压缩 JavaScript 文件
-      new TerserWebpackPlugin(),
+      new TerserWebpackPlugin({
+        // 默认值为 `require('os').cpus().length - 1`
+        parallel: 2, // number | boolean
+        extractComments: !isProduction, // 不提取注释
+      }),
     ],
+    usedExports: true, // Tree Shaking 分析代码，消除无用代码
   },
 
   cache: {
@@ -211,6 +254,9 @@ module.exports = {
     // 配置模块解析路径，首先在 'src' 目录下查找，然后再去 'node_modules' 目录查找所需的模块
     modules: [path.resolve(__dirname, 'src'), 'node_modules'],
   },
+
+  /* 在开发模式下追踪代码 */
+  devtool: isProduction ? 'source-map' : 'cheap-module-source-map',
 
   /* 开发服务器 */
   devServer: {

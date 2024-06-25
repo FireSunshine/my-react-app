@@ -7,12 +7,14 @@
     "jsx": "react-jsx", // 指定 JSX 语法转换器
 
     /* Modules */
-    "module": "commonjs", // 指定模块代码生成方式
+    "module": "ESNext", // 指定模块代码生成方式
     "baseUrl": "./src", // 设置相对路径的基准文件夹
     "paths": {
       "@/*": ["*"] // 定义路径别名，方便引入自定义模块
     },
+    "moduleResolution": "node", // 指定模块解析策略为 Node.js 风格
     "resolveJsonModule": true, // 允许将 JSON 文件作为模块导入
+    "isolatedModules": true, // 将每个文件视为独立模块，以帮助捕获一些常见错误
 
     /* JavaScript Support */
     "allowJs": true, // 允许编译 JavaScript 文件

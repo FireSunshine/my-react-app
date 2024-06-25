@@ -20,4 +20,6 @@ module.exports = {
   bracketSpacing: true,
   // 箭头函数，只有一个参数的时候，是否需要括号，默认为 avoid，有两个可选值 "avoid" 和 "always"
   arrowParens: 'avoid',
+  // 设置文件行尾符 crlf / lf
+  endOfLine: 'lf',
 };
